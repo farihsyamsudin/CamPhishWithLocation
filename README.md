@@ -1,5 +1,5 @@
-# CamPhish
-Grab cam shots from target's phone front camera or PC webcam just sending a link.
+# CamPhish With Location. Forked from https://github.com/techchipnet/CamPhish
+Grab cam shots and theri location from target's phone front camera or PC webcam just sending a link. (Phone location will be more accurate)
 ![CamPhish](https://techchip.net/wp-content/uploads/2020/04/camphish.jpg)
 
 # What is CamPhish?
